@@ -10,18 +10,25 @@
   const viewEl = $('#view');
   const searchEl = $('#global-search');
 
-  const state = { view: 'topic', topic: TOPICS[0]?.id, gdiff: 'easy', diff: 'all', status: 'all', query: '' };
+  const state = { view: 'topic', topic: TOPICS[0]?.id || 'arrays', gdiff: 'easy', diff: 'all', status: 'all', query: '' };
   let progress = load();
 
   /* ---------- helpers ---------- */
   function load() {
-    try { return { done: {}, star: {}, ...JSON.parse(localStorage.getItem(STORE_KEY) || '{}') }; }
-    catch { return { done: {}, star: {} }; }
+    try {
+      const parsed = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+      return {
+        done: parsed && typeof parsed.done === 'object' && !Array.isArray(parsed.done) ? parsed.done : {},
+        star: parsed && typeof parsed.star === 'object' && !Array.isArray(parsed.star) ? parsed.star : {},
+      };
+    } catch {
+      return { done: {}, star: {} };
+    }
   }
   const save = () => localStorage.setItem(STORE_KEY, JSON.stringify(progress));
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
-  const num = (t) => t.file.slice(0, 2);
+  const num = (t) => t?.file ? t.file.slice(0, 2) : '00';
   const patternId = (t, p) => `${t.id}-p${p.n}`;
   const topicById = (id) => TOPICS.find((t) => t.id === id);
   const trackIds = (t) => [...t.questions.map((q) => q.id), ...t.patterns.map((p) => patternId(t, p))];
@@ -168,6 +175,7 @@
 
   function renderTopic() {
     const t = topicById(state.topic) || TOPICS[0];
+    if (!t) { viewEl.innerHTML = ''; return; }
     const ids = trackIds(t);
     const s = solved(ids);
     const counts = { all: t.questions.length };
@@ -359,6 +367,18 @@
     if (e.key === 'Escape' && document.activeElement === searchEl && searchEl.value) { searchEl.value = ''; state.query = ''; render(); }
   });
 
+  function setupBackdropClose(dialog) {
+    dialog.addEventListener('click', (e) => {
+      const rect = dialog.getBoundingClientRect();
+      const inDialog =
+        rect.top <= e.clientY &&
+        e.clientY <= rect.top + rect.height &&
+        rect.left <= e.clientX &&
+        e.clientX <= rect.left + rect.width;
+      if (!inDialog) dialog.close();
+    });
+  }
+
   /* random picker */
   const rDialog = $('#random-dialog');
   function pickRandom() {
@@ -380,12 +400,12 @@
   }
   $('#random-btn').addEventListener('click', () => { pickRandom(); rDialog.showModal(); });
   $('#random-again').addEventListener('click', pickRandom);
-  rDialog.addEventListener('click', (e) => { if (e.target === rDialog) rDialog.close(); }); // light-dismiss fallback
+  setupBackdropClose(rDialog);
 
   /* reset */
   const resetDialog = $('#reset-dialog');
   $('#reset-btn').addEventListener('click', () => resetDialog.showModal());
-  resetDialog.addEventListener('click', (e) => { if (e.target === resetDialog) resetDialog.close(); });
+  setupBackdropClose(resetDialog);
   resetDialog.addEventListener('close', () => {
     if (resetDialog.returnValue === 'confirm') { progress = { done: {}, star: {} }; save(); render(); toast('Progress reset'); }
   });
