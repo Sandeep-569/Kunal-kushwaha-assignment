@@ -25,7 +25,13 @@
       return { done: {}, star: {} };
     }
   }
-  const save = () => localStorage.setItem(STORE_KEY, JSON.stringify(progress));
+  function save() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(progress));
+    } catch (e) {
+      console.warn('Could not save progress to localStorage (private browsing or quota reached):', e);
+    }
+  }
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
   const num = (t) => t?.file ? t.file.slice(0, 2) : '00';
@@ -408,6 +414,14 @@
   setupBackdropClose(resetDialog);
   resetDialog.addEventListener('close', () => {
     if (resetDialog.returnValue === 'confirm') { progress = { done: {}, star: {} }; save(); render(); toast('Progress reset'); }
+  });
+
+  // Real-time synchronization across browser tabs
+  window.addEventListener('storage', (e) => {
+    if (e.key === STORE_KEY) {
+      progress = load();
+      render();
+    }
   });
 
   window.addEventListener('hashchange', () => { route(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
