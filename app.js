@@ -164,17 +164,121 @@
       return `<div class="stat" style="--c:${c}"><b>${ids.length}</b><span>${label}</span> <small>${solved(ids)} done</small></div>`;
     };
     const patterns = TOPICS.flatMap((t) => t.patterns.map((p) => ({ id: patternId(t, p) })));
+
+    // Difficulty breakdown for the 3-part divided circle
+    const easyList = byDiff('easy');
+    const medList = byDiff('medium');
+    const hardList = byDiff('hard');
+
+    const te = easyList.length;
+    const tm = medList.length;
+    const th = hardList.length;
+    const totalDiff = Math.max(1, te + tm + th);
+
+    const se = solved(easyList.map((q) => q.id));
+    const sm = solved(medList.map((q) => q.id));
+    const sh = solved(hardList.map((q) => q.id));
+
+    // Circle division in exact ratio of question difficulty
+    const g = 1.4; // divider gap width (in pathLength units out of 100)
+    const usable = Math.max(0, 100 - 3 * g);
+    const le = (te / totalDiff) * usable;
+    const lm = (tm / totalDiff) * usable;
+    const lh = (th / totalDiff) * usable;
+
+    const fe = te ? Math.min(le, le * (se / te)) : 0;
+    const fm = tm ? Math.min(lm, lm * (sm / tm)) : 0;
+    const fh = th ? Math.min(lh, lh * (sh / th)) : 0;
+
+    const offE = -(g / 2);
+    const offM = -(g / 2 + le + g);
+    const offH = -(g / 2 + le + g + lm + g);
+
+    // Divider angles in degrees (0 offset starts at 12 o'clock, which is -90deg)
+    const ang1 = -90;
+    const ang2 = -90 + (g + le) * 3.6;
+    const ang3 = -90 + (2 * g + le + lm) * 3.6;
+
+    const divLine = (ang) => {
+      const rad = (ang * Math.PI) / 180;
+      const x1 = (50 + 31.5 * Math.cos(rad)).toFixed(2);
+      const y1 = (50 + 31.5 * Math.sin(rad)).toFixed(2);
+      const x2 = (50 + 44.5 * Math.cos(rad)).toFixed(2);
+      const y2 = (50 + 44.5 * Math.sin(rad)).toFixed(2);
+      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="ring-divider" />`;
+    };
+
     $('#hero-stats').innerHTML = `
-      <div class="ring" style="--p:${pct(s, allIds.length)}" role="img" aria-label="${s} of ${allIds.length} solved">
-        <svg viewBox="0 0 40 40"><defs><linearGradient id="ring-grad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="hsl(188 92% 56%)"/><stop offset="60%" stop-color="hsl(262 92% 68%)"/><stop offset="100%" stop-color="hsl(320 85% 66%)"/></linearGradient></defs>
-          <circle class="track" cx="20" cy="20" r="15.9155"/><circle class="fill" cx="20" cy="20" r="15.9155" pathLength="100"/></svg>
-        <div class="ring-label"><b>${pct(s, allIds.length)}%</b><span>${s}/${allIds.length}</span></div>
+      <div class="ring" role="img" aria-label="${s} of ${allIds.length} questions solved. Easy: ${se}/${te}, Medium: ${sm}/${tm}, Hard: ${sh}/${th}">
+        <svg viewBox="0 0 100 100" class="ring-svg">
+          <defs>
+            <filter id="glow-easy" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="0" stdDeviation="1.5" flood-color="var(--easy)" flood-opacity="0.6"/>
+            </filter>
+            <filter id="glow-med" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="0" stdDeviation="1.5" flood-color="var(--medium)" flood-opacity="0.6"/>
+            </filter>
+            <filter id="glow-hard" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="0" stdDeviation="1.5" flood-color="var(--hard)" flood-opacity="0.6"/>
+            </filter>
+          </defs>
+
+          <!-- Easy Arc (${te} questions, ${Math.round(te/totalDiff*100)}%) -->
+          <circle cx="50" cy="50" r="38" pathLength="100" class="ring-arc arc-easy-track"
+            stroke-dasharray="${le.toFixed(2)} ${(100 - le).toFixed(2)}"
+            stroke-dashoffset="${offE.toFixed(2)}">
+            <title>Easy: ${se}/${te} solved (${pct(se, te)}%)</title>
+          </circle>
+          <circle cx="50" cy="50" r="38" pathLength="100" class="ring-arc arc-easy-fill"
+            stroke-dasharray="${fe.toFixed(2)} ${(100 - fe).toFixed(2)}"
+            stroke-dashoffset="${offE.toFixed(2)}" filter="url(#glow-easy)">
+            <title>Easy: ${se}/${te} solved (${pct(se, te)}%)</title>
+          </circle>
+
+          <!-- Medium Arc (${tm} questions, ${Math.round(tm/totalDiff*100)}%) -->
+          <circle cx="50" cy="50" r="38" pathLength="100" class="ring-arc arc-med-track"
+            stroke-dasharray="${lm.toFixed(2)} ${(100 - lm).toFixed(2)}"
+            stroke-dashoffset="${offM.toFixed(2)}">
+            <title>Medium: ${sm}/${tm} solved (${pct(sm, tm)}%)</title>
+          </circle>
+          <circle cx="50" cy="50" r="38" pathLength="100" class="ring-arc arc-med-fill"
+            stroke-dasharray="${fm.toFixed(2)} ${(100 - fm).toFixed(2)}"
+            stroke-dashoffset="${offM.toFixed(2)}" filter="url(#glow-med)">
+            <title>Medium: ${sm}/${tm} solved (${pct(sm, tm)}%)</title>
+          </circle>
+
+          <!-- Hard Arc (${th} questions, ${Math.round(th/totalDiff*100)}%) -->
+          <circle cx="50" cy="50" r="38" pathLength="100" class="ring-arc arc-hard-track"
+            stroke-dasharray="${lh.toFixed(2)} ${(100 - lh).toFixed(2)}"
+            stroke-dashoffset="${offH.toFixed(2)}">
+            <title>Hard: ${sh}/${th} solved (${pct(sh, th)}%)</title>
+          </circle>
+          <circle cx="50" cy="50" r="38" pathLength="100" class="ring-arc arc-hard-fill"
+            stroke-dasharray="${fh.toFixed(2)} ${(100 - fh).toFixed(2)}"
+            stroke-dashoffset="${offH.toFixed(2)}" filter="url(#glow-hard)">
+            <title>Hard: ${sh}/${th} solved (${pct(sh, th)}%)</title>
+          </circle>
+
+          <!-- Dividers separating the 3 segments -->
+          ${divLine(ang1)}
+          ${divLine(ang2)}
+          ${divLine(ang3)}
+        </svg>
+
+        <div class="ring-label">
+          <b>${pct(s, allIds.length)}%</b>
+          <span>${s}/${allIds.length}</span>
+          <div class="ring-legend" aria-hidden="true">
+            <span class="rl-dot rl-easy" title="Easy: ${se}/${te}"></span>
+            <span class="rl-dot rl-med" title="Medium: ${sm}/${tm}"></span>
+            <span class="rl-dot rl-hard" title="Hard: ${sh}/${th}"></span>
+          </div>
+        </div>
       </div>
       <div class="stat-grid">
-        ${stat('Easy', byDiff('easy'), 'var(--easy)')}
-        ${stat('Medium', byDiff('medium'), 'var(--medium)')}
-        ${stat('Hard', byDiff('hard'), 'var(--hard)')}
+        ${stat('Easy', easyList, 'var(--easy)')}
+        ${stat('Medium', medList, 'var(--medium)')}
+        ${stat('Hard', hardList, 'var(--hard)')}
         ${stat('Patterns + Practice', [...patterns, ...byDiff('other')], 'var(--other)')}
       </div>`;
   }

@@ -188,15 +188,46 @@ code { font-family: var(--mono); font-size: .88em; background: var(--surface-2);
 .hero-sub { color: var(--muted); margin: 0; max-width: 58ch; font-size: 1.02rem; }
 .hero-sub strong { color: var(--text); font-weight: 600; }
 
-.hero-stats { display: grid; grid-template-columns: auto 1fr; gap: 1.4rem; align-items: center; }
-.ring { --p: 0; width: 150px; height: 150px; position: relative; }
-.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-.ring circle { fill: none; stroke-width: 10; }
-.ring .track { stroke: var(--surface-2); }
-.ring .fill { stroke: url(#ring-grad); stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: calc(100 - var(--p)); transition: stroke-dashoffset 1s var(--ease); }
-.ring-label { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
-.ring-label b { font-size: 1.8rem; font-weight: 800; letter-spacing: -.03em; }
-.ring-label span { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; }
+.hero-stats { display: grid; grid-template-columns: auto 1fr; gap: 1.6rem; align-items: center; }
+.ring { width: 170px; height: 170px; position: relative; flex-shrink: 0; }
+.ring-svg { width: 100%; height: 100%; overflow: visible; }
+.ring-arc {
+  fill: none;
+  stroke-width: 8.5;
+  transform: rotate(-90deg);
+  transform-origin: 50px 50px;
+  transition: stroke-dasharray .9s var(--ease), stroke-dashoffset .9s var(--ease), stroke-width .2s ease;
+  cursor: pointer;
+}
+.ring-arc:hover { stroke-width: 10.5; }
+.arc-easy-track { stroke: hsl(152 68% 52% / .16); }
+.arc-easy-fill  { stroke: var(--easy); stroke-linecap: round; }
+
+.arc-med-track  { stroke: hsl(38 96% 60% / .16); }
+.arc-med-fill   { stroke: var(--medium); stroke-linecap: round; }
+
+.arc-hard-track { stroke: hsl(350 88% 64% / .16); }
+.arc-hard-fill  { stroke: var(--hard); stroke-linecap: round; }
+
+.ring-divider {
+  stroke: var(--bg);
+  stroke-width: 3.2px;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.ring-label {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; pointer-events: none;
+}
+.ring-label b { font-size: 1.9rem; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+.ring-label span { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; margin-top: .3rem; font-weight: 600; }
+.ring-legend { display: flex; gap: .45rem; margin-top: .5rem; align-items: center; }
+.rl-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--c); box-shadow: 0 0 6px var(--c); }
+.rl-easy { --c: var(--easy); }
+.rl-med { --c: var(--medium); }
+.rl-hard { --c: var(--hard); }
 .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .7rem; }
 .stat {
   padding: .8rem .95rem; border-radius: 14px; background: var(--surface); border: 1px solid var(--border);
