@@ -191,28 +191,40 @@ code { font-family: var(--mono); font-size: .88em; background: var(--surface-2);
 .hero-stats { display: grid; grid-template-columns: auto 1fr; gap: 1.6rem; align-items: center; }
 .ring { width: 170px; height: 170px; position: relative; flex-shrink: 0; }
 .ring-svg { width: 100%; height: 100%; overflow: visible; }
+.ring-base {
+  fill: none;
+  stroke: hsl(220 22% 16% / .45);
+  stroke-width: 8.5;
+}
+.ring-sector {
+  outline: none;
+  cursor: pointer;
+}
 .ring-arc {
   fill: none;
   stroke-width: 8.5;
-  transform: rotate(-90deg);
-  transform-origin: 50px 50px;
-  transition: stroke-dasharray .9s var(--ease), stroke-dashoffset .9s var(--ease), stroke-width .2s ease;
-  cursor: pointer;
+  transition: stroke-dasharray .7s var(--ease), stroke-width .2s ease;
 }
-.ring-arc:hover { stroke-width: 10.5; }
+.ring-sector:hover .ring-arc {
+  stroke-width: 10.2;
+}
 .arc-easy-track { stroke: hsl(152 68% 52% / .16); }
-.arc-easy-fill  { stroke: var(--easy); stroke-linecap: round; }
+.arc-easy-fill  { stroke: var(--easy); }
 
 .arc-med-track  { stroke: hsl(38 96% 60% / .16); }
-.arc-med-fill   { stroke: var(--medium); stroke-linecap: round; }
+.arc-med-fill   { stroke: var(--medium); }
 
 .arc-hard-track { stroke: hsl(350 88% 64% / .16); }
-.arc-hard-fill  { stroke: var(--hard); stroke-linecap: round; }
+.arc-hard-fill  { stroke: var(--hard); }
 
-.ring-divider {
-  stroke: var(--bg);
-  stroke-width: 3.2px;
+.ring-divider-line {
+  stroke: hsl(218 24% 42%);
+  stroke-width: 2.2px;
   stroke-linecap: round;
+  pointer-events: none;
+}
+.ring-divider-dot {
+  fill: hsl(218 30% 65%);
   pointer-events: none;
 }
 

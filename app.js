@@ -180,89 +180,115 @@
     const sh = solved(hardList.map((q) => q.id));
 
     // Circle division in exact ratio of question difficulty
-    const g = 1.4; // divider gap width (in pathLength units out of 100)
-    const usable = Math.max(0, 100 - 3 * g);
-    const le = (te / totalDiff) * usable;
-    const lm = (tm / totalDiff) * usable;
-    const lh = (th / totalDiff) * usable;
+    const r = 38;
+    const circ = 2 * Math.PI * r;
+    const strokeW = 8.5;
+    const capDeg = (strokeW / 2 / circ) * 360; // ~6.41° round cap extent
+    const gapFromDivider = 3.5; // clean air-gap between cap tip and divider line
+    const inset = capDeg + gapFromDivider; // ~9.91°
 
-    const fe = te ? Math.min(le, le * (se / te)) : 0;
-    const fm = tm ? Math.min(lm, lm * (sm / tm)) : 0;
-    const fh = th ? Math.min(lh, lh * (sh / th)) : 0;
+    // Exact boundary angles (0 offset at 12 o'clock, which is -90°)
+    const d1 = -90; // boundary between Hard & Easy (top)
+    const d2 = -90 + (te / totalDiff) * 360; // boundary between Easy & Medium
+    const d3 = -90 + ((te + tm) / totalDiff) * 360; // boundary between Medium & Hard
 
-    const offE = -(g / 2);
-    const offM = -(g / 2 + le + g);
-    const offH = -(g / 2 + le + g + lm + g);
+    const polarToCart = (cx, cy, radius, deg) => {
+      const rad = (deg * Math.PI) / 180;
+      return {
+        x: +(cx + radius * Math.cos(rad)).toFixed(2),
+        y: +(cy + radius * Math.sin(rad)).toFixed(2)
+      };
+    };
 
-    // Divider angles in degrees (0 offset starts at 12 o'clock, which is -90deg)
-    const ang1 = -90;
-    const ang2 = -90 + (g + le) * 3.6;
-    const ang3 = -90 + (2 * g + le + lm) * 3.6;
+    const arcPath = (cx, cy, radius, startDeg, endDeg) => {
+      const p1 = polarToCart(cx, cy, radius, startDeg);
+      const p2 = polarToCart(cx, cy, radius, endDeg);
+      const sweep = (endDeg - startDeg + 360) % 360;
+      const largeArc = sweep > 180 ? 1 : 0;
+      return `M ${p1.x} ${p1.y} A ${radius} ${radius} 0 ${largeArc} 1 ${p2.x} ${p2.y}`;
+    };
 
-    const divLine = (ang) => {
-      const rad = (ang * Math.PI) / 180;
-      const x1 = (50 + 31.5 * Math.cos(rad)).toFixed(2);
-      const y1 = (50 + 31.5 * Math.sin(rad)).toFixed(2);
-      const x2 = (50 + 44.5 * Math.cos(rad)).toFixed(2);
-      const y2 = (50 + 44.5 * Math.sin(rad)).toFixed(2);
-      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="ring-divider" />`;
+    // Calculate arc paths for each sector
+    const eS = d1 + inset, eE = d2 - inset;
+    const mS = d2 + inset, mE = d3 - inset;
+    const hS = d3 + inset, hE = d1 + 360 - inset;
+
+    const pathE = arcPath(50, 50, r, eS, eE);
+    const pathM = arcPath(50, 50, r, mS, mE);
+    const pathH = arcPath(50, 50, r, hS, hE);
+
+    const pe = te ? (se / te) * 100 : 0;
+    const pm = tm ? (sm / tm) * 100 : 0;
+    const ph = th ? (sh / th) * 100 : 0;
+
+    const divLine = (deg) => {
+      const p1 = polarToCart(50, 50, 31.5, deg);
+      const p2 = polarToCart(50, 50, 44.5, deg);
+      const pDot = polarToCart(50, 50, 47, deg);
+      return `
+        <line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" class="ring-divider-line" />
+        <circle cx="${pDot.x}" cy="${pDot.y}" r="1.2" class="ring-divider-dot" />
+      `;
     };
 
     $('#hero-stats').innerHTML = `
       <div class="ring" role="img" aria-label="${s} of ${allIds.length} questions solved. Easy: ${se}/${te}, Medium: ${sm}/${tm}, Hard: ${sh}/${th}">
         <svg viewBox="0 0 100 100" class="ring-svg">
           <defs>
-            <filter id="glow-easy" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="1.5" flood-color="var(--easy)" flood-opacity="0.6"/>
+            <filter id="glow-easy" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="0" stdDeviation="1.8" flood-color="var(--easy)" flood-opacity="0.75"/>
             </filter>
-            <filter id="glow-med" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="1.5" flood-color="var(--medium)" flood-opacity="0.6"/>
+            <filter id="glow-med" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="0" stdDeviation="1.8" flood-color="var(--medium)" flood-opacity="0.75"/>
             </filter>
-            <filter id="glow-hard" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="1.5" flood-color="var(--hard)" flood-opacity="0.6"/>
+            <filter id="glow-hard" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="0" stdDeviation="1.8" flood-color="var(--hard)" flood-opacity="0.75"/>
             </filter>
           </defs>
 
+          <!-- Base Guide Ring -->
+          <circle cx="50" cy="50" r="38" class="ring-base" />
+
           <!-- Easy Arc (${te} questions, ${Math.round(te/totalDiff*100)}%) -->
-          <circle cx="50" cy="50" r="38" pathLength="100" class="ring-arc arc-easy-track"
-            stroke-dasharray="${le.toFixed(2)} ${(100 - le).toFixed(2)}"
-            stroke-dashoffset="${offE.toFixed(2)}">
-            <title>Easy: ${se}/${te} solved (${pct(se, te)}%)</title>
-          </circle>
-          <circle cx="50" cy="50" r="38" pathLength="100" class="ring-arc arc-easy-fill"
-            stroke-dasharray="${fe.toFixed(2)} ${(100 - fe).toFixed(2)}"
-            stroke-dashoffset="${offE.toFixed(2)}" filter="url(#glow-easy)">
-            <title>Easy: ${se}/${te} solved (${pct(se, te)}%)</title>
-          </circle>
+          <a href="#difficulty/easy" class="ring-sector" aria-label="Easy: ${se}/${te} solved (${pct(se, te)}%)">
+            <path d="${pathE}" class="ring-arc arc-easy-track" stroke-linecap="round">
+              <title>Easy: ${se}/${te} solved (${pct(se, te)}%)</title>
+            </path>
+            ${se > 0 ? `
+            <path d="${pathE}" class="ring-arc arc-easy-fill" stroke-linecap="round" pathLength="100"
+              stroke-dasharray="${pe.toFixed(2)} 100" filter="url(#glow-easy)">
+              <title>Easy: ${se}/${te} solved (${pct(se, te)}%)</title>
+            </path>` : ''}
+          </a>
 
           <!-- Medium Arc (${tm} questions, ${Math.round(tm/totalDiff*100)}%) -->
-          <circle cx="50" cy="50" r="38" pathLength="100" class="ring-arc arc-med-track"
-            stroke-dasharray="${lm.toFixed(2)} ${(100 - lm).toFixed(2)}"
-            stroke-dashoffset="${offM.toFixed(2)}">
-            <title>Medium: ${sm}/${tm} solved (${pct(sm, tm)}%)</title>
-          </circle>
-          <circle cx="50" cy="50" r="38" pathLength="100" class="ring-arc arc-med-fill"
-            stroke-dasharray="${fm.toFixed(2)} ${(100 - fm).toFixed(2)}"
-            stroke-dashoffset="${offM.toFixed(2)}" filter="url(#glow-med)">
-            <title>Medium: ${sm}/${tm} solved (${pct(sm, tm)}%)</title>
-          </circle>
+          <a href="#difficulty/medium" class="ring-sector" aria-label="Medium: ${sm}/${tm} solved (${pct(sm, tm)}%)">
+            <path d="${pathM}" class="ring-arc arc-med-track" stroke-linecap="round">
+              <title>Medium: ${sm}/${tm} solved (${pct(sm, tm)}%)</title>
+            </path>
+            ${sm > 0 ? `
+            <path d="${pathM}" class="ring-arc arc-med-fill" stroke-linecap="round" pathLength="100"
+              stroke-dasharray="${pm.toFixed(2)} 100" filter="url(#glow-med)">
+              <title>Medium: ${sm}/${tm} solved (${pct(sm, tm)}%)</title>
+            </path>` : ''}
+          </a>
 
           <!-- Hard Arc (${th} questions, ${Math.round(th/totalDiff*100)}%) -->
-          <circle cx="50" cy="50" r="38" pathLength="100" class="ring-arc arc-hard-track"
-            stroke-dasharray="${lh.toFixed(2)} ${(100 - lh).toFixed(2)}"
-            stroke-dashoffset="${offH.toFixed(2)}">
-            <title>Hard: ${sh}/${th} solved (${pct(sh, th)}%)</title>
-          </circle>
-          <circle cx="50" cy="50" r="38" pathLength="100" class="ring-arc arc-hard-fill"
-            stroke-dasharray="${fh.toFixed(2)} ${(100 - fh).toFixed(2)}"
-            stroke-dashoffset="${offH.toFixed(2)}" filter="url(#glow-hard)">
-            <title>Hard: ${sh}/${th} solved (${pct(sh, th)}%)</title>
-          </circle>
+          <a href="#difficulty/hard" class="ring-sector" aria-label="Hard: ${sh}/${th} solved (${pct(sh, th)}%)">
+            <path d="${pathH}" class="ring-arc arc-hard-track" stroke-linecap="round">
+              <title>Hard: ${sh}/${th} solved (${pct(sh, th)}%)</title>
+            </path>
+            ${sh > 0 ? `
+            <path d="${pathH}" class="ring-arc arc-hard-fill" stroke-linecap="round" pathLength="100"
+              stroke-dasharray="${ph.toFixed(2)} 100" filter="url(#glow-hard)">
+              <title>Hard: ${sh}/${th} solved (${pct(sh, th)}%)</title>
+            </path>` : ''}
+          </a>
 
           <!-- Dividers separating the 3 segments -->
-          ${divLine(ang1)}
-          ${divLine(ang2)}
-          ${divLine(ang3)}
+          ${divLine(d1)}
+          ${divLine(d2)}
+          ${divLine(d3)}
         </svg>
 
         <div class="ring-label">
